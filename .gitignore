@@ -1,0 +1,14 @@
+# Raw county / OSM / DEM downloads and build intermediates (fetch them; see docs/METHOD.md)
+data/
+osm/
+site/*.geojson
+site/stats.json
+slope/dem/
+slope/*.tif
+slope/*.geojson
+slope/*.json
+slope/*.png
+slope/src/
+__pycache__/
+.venv/
+*.pyc

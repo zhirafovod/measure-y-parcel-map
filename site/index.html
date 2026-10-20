@@ -1,0 +1,152 @@
+<!doctype html><html lang="en"><head>
+<link rel="icon" href="data:,"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Measure Y: what will your parcel pay? (estimate)</title>
+<meta name="description" content="Unofficial estimate of the Belmont Measure Y (Nov 3, 2026) special tax for each parcel: $0.33/sq ft for homes, $0.54/sq ft for other buildings, from county building data. Not a tax bill.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Measure Y: what will your parcel pay? (estimate)">
+<meta property="og:description" content="Unofficial parcel-by-parcel estimate of Belmont's Measure Y special tax ($0.33/sq ft homes, $0.54/sq ft other), with yearly increases and 10- and 30-year totals. Not a tax bill.">
+<meta property="og:url" content="https://measure-y-parcel-cost.grok.me/">
+<meta property="og:image" content="https://measure-y-parcel-cost.grok.me/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Map of Belmont parcels shaded by estimated Measure Y tax, with the headline: What will Measure Y cost your parcel?">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://measure-y-parcel-cost.grok.me/og.png">
+<meta name="twitter:title" content="Measure Y: what will your parcel pay? (estimate)">
+<meta name="twitter:description" content="Unofficial parcel-by-parcel estimate of Belmont's Measure Y special tax. Not a tax bill.">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1d1d1f}
+#map{position:absolute;top:0;bottom:0;left:360px;right:0;background:#eef0f2}
+#side{position:absolute;left:0;top:0;bottom:0;width:360px;overflow:auto;padding:12px 14px 24px;background:#f7f7f8;border-right:1px solid #ddd;z-index:500}
+h1{font-size:18px;margin:0 0 4px}.muted{color:#5f6368;font-size:12px}a{color:#0b57d0}
+.xlink{font-size:13px;margin:4px 0 2px;font-weight:600}.xlink a{text-decoration:none}.xlink a:hover{text-decoration:underline}
+.disc{background:#fff4ce;border:1px solid #e7c75b;border-radius:6px;padding:7px 9px;font-size:12.5px;margin:8px 0}
+.box{background:#fff;border:1px solid #ddd;border-radius:8px;padding:10px;margin:10px 0}
+.big{font-size:24px;font-weight:700;color:#a50f15}table{width:100%;border-collapse:collapse}td{padding:2px 0}td.r{text-align:right;font-weight:600}
+label{display:block;margin:5px 0}input[type=number],input[type=search],select{font-size:15px;padding:6px;border:1px solid #bbb;border-radius:5px}
+input[type=search]{width:100%}#sf{width:120px}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:9px;margin-left:4px;vertical-align:1px}
+.t-res{background:#fde0dd}.t-other{background:#dbe9ff}.t-exempt{background:#e6e6e6}.t-maybe{background:#fff0b3}.t-unk{background:#eee}
+#results{position:relative}#results div{padding:6px 8px;border-bottom:1px solid #eee;cursor:pointer;background:#fff}#results div:hover{background:#f0f4ff}
+.legend{background:#fff;padding:6px 8px;border-radius:6px;box-shadow:0 1px 4px #0003;font-size:12px;line-height:1.5}
+.sw{display:inline-block;width:14px;height:10px;margin-right:5px;vertical-align:middle;border:1px solid #0002}
+details summary{cursor:pointer;font-weight:600}
+#toggle{display:none}
+@media (max-width:760px){
+ #map{left:0;right:0;top:0;bottom:44vh}
+ #side{top:auto;bottom:0;width:100%;height:44vh;border-right:0;border-top:1px solid #ccc;box-shadow:0 -2px 8px #0002}
+ #side.collapsed{height:118px}
+ body.collapsed #map{bottom:118px}
+ #toggle{display:block;position:absolute;right:10px;top:8px;font-size:12px;padding:4px 8px;border:1px solid #bbb;border-radius:5px;background:#fff}
+ h1{font-size:16px;padding-right:70px}.legend{font-size:10px;line-height:1.3}.disc{font-size:11.5px}
+}
+</style></head><body>
+<div id="side">
+<button id="toggle" aria-label="Expand or collapse panel">Collapse</button>
+<h1>Measure Y: what will your parcel pay? <span style="font-weight:400">(estimate)</span></h1>
+<div class="xlink"><a href="https://belmont-measure-y.grok.me/" target="_blank" rel="noopener">Full details on Measure Y: belmont-measure-y.grok.me&nbsp;↗</a></div>
+<div class="disc"><b>Estimate, not a tax bill.</b> Unofficial. Floor area is estimated from county building outlines; enter your real floor area for an exact figure. Not affiliated with the City of Belmont or San Mateo County.</div>
+<div class="box">
+ <input id="q" type="search" placeholder="Search an address, e.g. 1835 Belburn" autocomplete="off" aria-label="Search address">
+ <div id="results"></div>
+</div>
+<div class="box">
+ <div class="muted">Selected parcel</div>
+ <div id="addr">Tap a parcel on the map, search an address, or just enter a floor area.</div>
+ <div id="note" class="muted"></div>
+ <hr style="border:0;border-top:1px solid #eee">
+ <div class="muted">Estimated annual tax (starts July 2027)</div><div class="big" id="y1">—</div>
+ <table><tr><td>Year 10</td><td class="r" id="y10"></td></tr>
+ <tr><td>First 10 years, total</td><td class="r" id="t10"></td></tr>
+ <tr><td>First 30 years, total</td><td class="r" id="t30"></td></tr></table>
+ <div class="muted">The tax has <b>no end date</b> — it runs "until ended by voters" (Sec. 23-304). 30 years is an illustration, not a payoff date. The Council may raise the rate each year by up to the greater of Bay Area CPI or CA per-capita personal income growth (Sec. 23-302(c)).</div>
+</div>
+<div class="box">
+ <label>Taxable floor area (sq ft): <input id="sf" type="number" min="0" step="10" value="1800" inputmode="numeric"></label>
+ <div class="muted">Gross area of all floors incl. usable basement and porches; excludes garage/parking areas, balconies, patios (Sec. 23-301(j)).</div>
+ <label><input type="radio" name="rate" value="0.33" checked> Dwelling unit — $0.33/sq ft</label>
+ <label><input type="radio" name="rate" value="0.54"> All other property — $0.54/sq ft</label>
+ <label><input type="radio" name="rate" value="0"> Exempt parcel — $0</label>
+ <label><input type="checkbox" id="senior"> Owner lives here and is 65+ (exempt; must apply each year)</label>
+ <label>Yearly increase: <select id="esc"><option value="0">0% (never raised)</option><option value="0.03" selected>3% (≈ Bay Area CPI)</option><option value="0.04">4% (≈ CA per-capita income)</option></select></label>
+</div>
+<details class="box" open><summary>Sources & method</summary>
+<p class="muted"><b>More on Measure Y.</b> Ballot text, costs, financing and timeline, with sources: <a href="https://belmont-measure-y.grok.me/" target="_blank" rel="noopener">belmont-measure-y.grok.me</a>.</p>
+<p class="muted"><b>The measure.</b> Ordinance in <a href="https://smcacre.gov/system/files/2026-08/52-ENG-M308-Contest%20Code-Reso-Belmont%20Special%20Tax_Redacted.pdf" target="_blank" rel="noopener">Resolution 2026-69, Attachment 2</a>: Sec. 23-302 sets $0.33/sq ft for dwelling units and $0.54/sq ft for all other property in FY 2027-28, with yearly increases; Sec. 23-303 exempts parcels exempt by law and owner-occupants 65+; Sec. 23-304: operative July 1, 2027 "until ended by voters". See also the <a href="https://smcacre.gov/system/files/2026-08/52-ENG-MY-ImpartialAnalysis-Belmont-Special-Tax.pdf" target="_blank" rel="noopener">City Attorney's impartial analysis</a> (≈$7.1M first year) and the <a href="https://smcacre.gov/elections/november-3-2026-statewide-general-election" target="_blank" rel="noopener">county election page</a>.</p>
+<p class="muted"><b>Floor area estimate.</b> <a href="https://www.smcgov.org/tsd/gis-data-download" target="_blank" rel="noopener">San Mateo County GIS</a> building footprints (roof height → number of floors) intersected with county active parcels. Detached garages, carports and sheds tagged in <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> are removed where they line up with a county footprint on the same parcel (about 290 parcels). For other single-family homes we subtract a typical 400 sq ft attached garage (never more than 40% of the estimate). Condo/townhome parcels that share one lot outline get the building split evenly by unit. Apartments and commercial buildings show the whole building; multi-story garages inside buildings are not removed, so those run high.</p>
+<p class="muted"><b>Rate class & exemptions.</b> County assessor property-use codes (public layer). Parcels owned by public agencies (city, county, state, school and special districts), parks and streets are shown as exempt. Private schools, churches, colleges, cemeteries and care facilities are shown as "may be exempt": the measure exempts only what state/federal law exempts, and whether nonprofit property-tax exemptions apply to a per-square-foot special tax is not settled here.</p>
+<p class="muted"><b>Check against the city's figure.</b> Summed over all taxable parcels (homes $0.33, other $0.54), our estimates give ≈$8.4M before senior exemptions, vs. the city's ≈$7.1M. The gap is consistent with senior exemptions (≈20% of residential revenue) but could also mean our floor areas run high. Treat any single parcel as roughly ±20%. No further scaling was applied.</p>
+<p class="muted"><b>Privacy.</b> No owner names are used or shown. Addresses and parcel numbers are public county records; a few parcels without a county address use the OpenStreetMap building address for search.</p>
+<p class="muted">Basemap © <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> · © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> · data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>. Parcels and buildings: County of San Mateo GIS. Garage/shed tags and some addresses: © OpenStreetMap contributors (ODbL). Data as of Oct 11, 2026.</p>
+</details>
+</div>
+<div id="map"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
+<script>
+const $=id=>document.getElementById(id), fmt=v=>'$'+Math.round(v).toLocaleString('en-US');
+const map=L.map('map',{preferCanvas:true,zoomControl:true,attributionControl:false}).setView([37.515,-122.29],14);
+let base;
+try{ base=L.maplibreGL({style:'https://tiles.openfreemap.org/styles/positron',attribution:'© OpenFreeMap © OpenMapTiles © OpenStreetMap contributors'}).addTo(map);}catch(e){console.warn(e)}
+map.attributionControl&&map.attributionControl.addAttribution('Parcels & buildings © County of San Mateo GIS');
+const RATE={res:0.33,other:0.54,maybe:0.54,exempt:0,unk:0.54};
+const LABEL={res:'Residential $0.33',other:'Other $0.54',exempt:'Exempt',maybe:'May be exempt',unk:'Unclassified'};
+const NOTE={exempt:'Shown as exempt: public-agency owner or public use (parks, streets, post office).',
+ maybe:'May be exempt (private school, church, college, cemetery or care facility). The measure exempts only what state or federal law exempts; not confirmed. Shown at $0.54 if taxable.',
+ unk:'No county use code (often a condo common area). Shown at $0.54 for reference.'};
+function yearOne(p){return p.s*RATE[p.c]}
+function color(p){ if(p.c==='exempt') return '#d0d0d0'; if(!p.s) return '#f3f3f3'; const v=yearOne(p);
+ if(p.c==='maybe') return '#f6d55c';
+ return v<400?'#fee5d9':v<700?'#fcae91':v<1000?'#fb6a4a':v<1500?'#de2d26':'#a50f15'}
+function calc(){
+ const sf=+$('sf').value||0, r=+document.querySelector('input[name=rate]:checked').value, e=+$('esc').value, sen=$('senior').checked;
+ const y1=sen&&r===0.33?0:sf*r; let t10=0,t30=0,y10=0;
+ for(let i=0;i<30;i++){const y=y1*Math.pow(1+e,i); if(i<10)t10+=y; t30+=y; if(i===9)y10=y;}
+ $('y1').textContent=fmt(y1)+' / yr'; $('y10').textContent=fmt(y10); $('t10').textContent=fmt(t10); $('t30').textContent=fmt(t30);
+}
+['sf','esc','senior'].forEach(id=>$(id).addEventListener('input',calc));
+document.querySelectorAll('input[name=rate]').forEach(x=>x.addEventListener('change',calc));
+$('toggle').onclick=()=>{const s=$('side');const c=s.classList.toggle('collapsed');document.body.classList.toggle('collapsed',c);$('toggle').textContent=c?'Expand':'Collapse';setTimeout(()=>{map.invalidateSize();if(sel)try{map.panTo(sel.getBounds().getCenter())}catch(e){}},60);};
+let sel=null, lyr=null, index=[];
+if(window.ResizeObserver) new ResizeObserver(()=>map.invalidateSize()).observe(document.getElementById('map'));
+function select(l,zoom){
+ const p=l.feature.properties; if(sel) lyr.resetStyle(sel); sel=l; l.setStyle({color:'#000',weight:3}); l.bringToFront();
+ if(zoom) map.fitBounds(l.getBounds(),{maxZoom:18,padding:[30,30]});
+ let extra='';
+ if(p.n>1) extra=' · 1 of '+p.n+' units sharing this lot outline (building split evenly)';
+ if(p.o) extra+=' · '+p.o.toLocaleString()+' sq ft detached garage/shed removed (OpenStreetMap)';
+ if(p.g) extra+=' · 400 sq ft attached garage assumed';
+ if(p.ao) extra+=' · address from OpenStreetMap';
+ $('addr').innerHTML='<b>'+(p.a||'(no street address)')+'</b><span class="tag t-'+p.c+'">'+LABEL[p.c]+'</span><br><span class="muted">'+(p.u||'')+' · APN '+p.p+' · est. '+(p.s||0).toLocaleString()+' sq ft'+extra+'</span>';
+ let note=NOTE[p.c]||'';
+ if(/Apartment|Units|Combination/.test(p.u||'')) note='Whole building shown (the owner pays; may be passed on in rent). Per apartment ≈ total ÷ number of units.';
+ if(/Condominium|Townhome/.test(p.u||'')) note='Condo/townhome estimates are rough. Enter your unit\'s floor area for an exact figure.';
+ if(!p.s && p.c!=='exempt') note='No building found on this parcel in county data.';
+ $('note').textContent=note;
+ $('sf').value=p.s||0;
+ const rv=String(RATE[p.c]===0.33?0.33:RATE[p.c]===0?0:0.54);
+ document.querySelector('input[name=rate][value="'+rv+'"]').checked=true; calc();
+}
+fetch('belmont.geojson').then(r=>r.json()).then(g=>L.geoJSON(g,{interactive:false,style:{color:'#333',weight:2,fill:false,dashArray:'5 5'}}).addTo(map));
+fetch('parcels.geojson').then(r=>r.json()).then(g=>{
+ lyr=L.geoJSON(g,{style:f=>({color:'#777',weight:0.4,fillColor:color(f.properties),fillOpacity:0.6}),
+  onEachFeature:(f,l)=>{const p=f.properties; if(p.a) index.push([p.a.toUpperCase(),l]);
+   if(!L.Browser.mobile) l.bindTooltip((p.a||'APN '+p.p)+'<br>'+LABEL[p.c]+(p.s&&RATE[p.c]?' · ~'+fmt(yearOne(p))+'/yr':''),{sticky:true});
+   l.on('click',()=>select(l,false));}}).addTo(map);
+ const q=new URLSearchParams(location.search);
+ if(q.get('apn')) lyr.eachLayer(l=>{if(l.feature.properties.p===q.get('apn')) select(l,true)});
+ if(q.get('collapsed')) $('toggle').click();
+});
+$('q').addEventListener('input',()=>{
+ const v=$('q').value.trim().toUpperCase(), box=$('results'); box.innerHTML=''; if(v.length<3) return;
+ index.filter(x=>x[0].includes(v)).slice(0,8).forEach(([a,l])=>{const d=document.createElement('div');d.textContent=a;
+  d.onclick=()=>{box.innerHTML='';$('q').value=a;select(l,true);}; box.appendChild(d);});
+});
+const lg=L.control({position:'bottomright'});lg.onAdd=()=>{const d=L.DomUtil.create('div','legend');
+ d.innerHTML='<b>Est. annual tax</b><br>'+[['#fee5d9','< $400'],['#fcae91','$400–700'],['#fb6a4a','$700–1,000'],['#de2d26','$1,000–1,500'],['#a50f15','> $1,500'],['#f6d55c','may be exempt'],['#d0d0d0','exempt']].map(x=>'<span class="sw" style="background:'+x[0]+'"></span>'+x[1]).join('<br>');return d};lg.addTo(map);
+calc();
+</script></body></html>
